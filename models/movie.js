@@ -3,8 +3,6 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 
-const { URL_REGEX } = require('../utils/validation');
-
 const movieSchema = new Schema(
   {
     country: {
@@ -23,7 +21,7 @@ const movieSchema = new Schema(
     },
 
     year: {
-      type: String,
+      type: Number,
       required: true,
     },
 
@@ -36,7 +34,7 @@ const movieSchema = new Schema(
       type: String,
       required: true,
       validate: {
-        validator: (url) => URL_REGEX.test(url),
+        validator: (url) => /^(https?|ftp):\/\/.*(jpeg|jpg|png|gif|bmp)$/i.test(url),
         message: 'Требуется URL',
       },
     },
@@ -45,7 +43,7 @@ const movieSchema = new Schema(
       type: String,
       required: true,
       validate: {
-        validator: (url) => URL_REGEX.test(url),
+        validator: (url) => /^(https?|ftp):\/\/.*(jpeg|jpg|png|gif|bmp)$/i.test(url),
         message: 'Требуется URL',
       },
     },
@@ -54,7 +52,7 @@ const movieSchema = new Schema(
       type: String,
       required: true,
       validate: {
-        validator: (url) => URL_REGEX.test(url),
+        validator: (url) => /^(https?|ftp):\/\/.*(jpeg|jpg|png|gif|bmp)$/i.test(url),
         message: 'Требуется URL',
       },
     },
@@ -80,6 +78,7 @@ const movieSchema = new Schema(
       required: true,
     },
   },
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('movie', movieSchema);

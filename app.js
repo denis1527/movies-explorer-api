@@ -14,9 +14,7 @@ const router = require('./routes/index');
 
 const errorHandler = require('./middlewares/errorHandler');
 
-const { MONGODB_URL } = require('./utils/config');
-
-const { PORT } = process.env;
+const { MONGODB_URL, PORT } = require('./utils/config');
 
 const app = express();
 
@@ -24,7 +22,11 @@ app.use(cors());
 app.use(helmet());
 
 mongoose.set('strictQuery', true);
-mongoose.connect(MONGODB_URL);
+mongoose.connect(MONGODB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true,
+});
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -38,4 +40,6 @@ app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  // console.log(`Server is running on port ${PORT}`);
+});
