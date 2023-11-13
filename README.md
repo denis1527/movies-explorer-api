@@ -16,7 +16,7 @@
 **Репозиторий проекта:** https://github.com/denis1527/movies-explorer-api
 
 **Ссылки на проект:**
-- IP: *51.250.108.250*
+- IP: *51.250.97.96*
 - Бэкенд: *https://github.com/denis1527/movies-explorer-frontend.git*
 
 **Чек-лист (см. раздел backend)**
