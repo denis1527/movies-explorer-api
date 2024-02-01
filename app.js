@@ -18,7 +18,16 @@ const { MONGODB_URL, PORT } = require('./utils/config');
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    'http://localhost:3001', // Разрешенный домен для разработки
+    'https://denis.movies.nomoredomainsmonster.ru', // Разрешенный домен для продакшена (HTTPS)
+    'http://denis.movies.nomoredomainsmonster.ru', // Разрешенный домен для продакшена (HTTP)
+  ],
+  credentials: true, // Разрешить отправку cookies с запросами из разрешенных доменов
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
 
 mongoose.set('strictQuery', true);
