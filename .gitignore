@@ -2,10 +2,12 @@
 logs
 *.log
 npm-debug.log*
-
+# .env file
+.env
+*.env
 # Dependency directory
 node_modules
-
+http-tests
 # Optional npm cache directory
 .npm
 
@@ -13,5 +15,3 @@ node_modules
 .DS_Store
 .idea
 .vscode
-
-.env

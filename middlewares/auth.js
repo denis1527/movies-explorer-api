@@ -1,32 +1,36 @@
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET_KEY, NODE_ENV } = require('../config');
+const RequestUnauthorized401 = require('../error-handlers/request-unauthorized-401');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+const generateToken = (payload) => jwt.sign(payload, NODE_ENV === 'production' ? JWT_SECRET_KEY : 'secret-key', { expiresIn: '7d' });
 
-const UnauthorizedError = require('../errors/unauthorized-err');
-
-module.exports = (req, res, next) => {
-  // достаю авторизационный заголовок
-  const { authorization } = req.headers;
-
-  // убеждаюсь, что он есть или начинается с Bearer
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Отсутствует заголовок авторизации');
+const checkToken = (token) => {
+  if (!token) {
+    throw new RequestUnauthorized401('Недостаточно прав для выполнения операции.');
   }
-
-  // извлекаю токен
-  const token = authorization.replace('Bearer ', '');
-
-  let payload;
-
   try {
-    // пытаюсь верифицировать токен
-    payload = jwt.verify(token, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret');
-  } catch (err) {
-    // отправляю ошибку, если не получилось
-    next(new UnauthorizedError('Необходима авторизация'));
+    return jwt.verify(token, NODE_ENV === 'production' ? JWT_SECRET_KEY : 'secret-key');
+  } catch (error) {
+    throw error;
+  }
+};
+
+const authentication = (req, res, next) => {
+  const token = req.cookies.jwt;
+
+  // Status 401:
+  if (!token) {
+    return next(new RequestUnauthorized401('Необходима авторизация.'));
+  }
+  let payload;
+  try {
+    payload = checkToken(token);
+  } catch (error) {
+    return next(new RequestUnauthorized401('Необходима авторизация.'));
   }
 
-  req.user = payload; // записываю пейлоуд в объект запроса
-
-  return next(); // пропускаю запрос дальше
+  req.user = payload;
+  return next();
 };
+
+module.exports = { generateToken, authentication, checkToken };

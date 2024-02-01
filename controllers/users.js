@@ -1,98 +1,59 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/users');
+const User = require('../models/user');
+const BadRequest400 = require('../error-handlers/bad-request-400');
+const NotFound404 = require('../error-handlers/not-found-404');
+const RequestConflict409 = require('../error-handlers/request-conflict-409');
+// Get Current User
+const getCurrentUser = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+    const user = await User.findById(userId);
 
-// Импортирую классы ошибок
-const BadRequestError = require('../errors/bad-request-err');
-const ConflictError = require('../errors/conflict-err');
-const NotFoundError = require('../errors/not-found-err');
-const UnauthorizedError = require('../errors/unauthorized-err');
-
-// Возвращаю текущего пользователя
-module.exports.getCurrentUser = (req, res, next) => {
-  User.findById(req.user._id)
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователя с таким _id не существует');
-      }
-      return res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
-        next(new BadRequestError('Пользователь по указанному _id не найден'));
-      } else {
-        next(err);
-      }
-    });
+    if (!user) {
+      // Status 404:
+      return next(new NotFound404(`Пользователь по указанному id: ${userId} не найден.`));
+    }
+    // Status 200:
+    res.json(user);
+  } catch (error) {
+    if (error.name === 'CastError') {
+      // Status 400:
+      return next(new BadRequest400('Указан некорректный id.'));
+    }
+    // Status 500:
+    return next(error);
+  }
 };
 
-// Создаю пользователя
-module.exports.createUser = (req, res, next) => {
-  const { email, password, name } = req.body;
-  bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      email,
-      password: hash,
+const updateUser = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+    const updData = {
       name,
-    }))
-    .then((user) => res.status(201).send({
-      email: user.email,
-      name: user.name,
-      _id: user._id,
-    }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
-      } else if (err.code === 11000) {
-        next(new ConflictError('Этот адрес почты уже зарегистрирован'));
-      } else {
-        next(err);
-      }
-    });
+      email,
+    };
+
+    const userId = req.user._id;
+
+    const user = await User.findByIdAndUpdate(userId, updData, { new: true, runValidators: true });
+
+    if (!user) {
+      // Status 404:
+      return next(new NotFound404(`Пользователь с указанным id: ${userId} не найден.`));
+    }
+    // Status 200:
+    res.send(user);
+  } catch (error) {
+    // Status 400:
+    if (error.name === 'ValidationError') {
+      return next(new BadRequest400('Переданы некорректные данные при обновлении профиля.'));
+    }
+    if (error.code === 11000) {
+      return next(new RequestConflict409('Пользователь с таким емайлом уже существует'));
+    }
+    // Status 500:
+    return next(error);
+  }
 };
 
-// Аутентификация пользователя
-module.exports.login = (req, res, next) => {
-  const { email, password } = req.body;
-
-  return User.findUserByCredentials(email, password)
-    .then((user) => {
-      const token = jwt.sign(
-        { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret',
-        { expiresIn: '7d' },
-      );
-      res.send({ token });
-    })
-    .catch(() => {
-      next(new UnauthorizedError('Введённые данные не верны'));
-    });
-};
-
-// Обновление профиля
-module.exports.updateProfile = (req, res, next) => {
-  User.findByIdAndUpdate(req.user._id, {
-    email: req.body.email,
-    name: req.body.name,
-  }, {
-    new: true, // обработчик then получает на вход обновлённую запись
-    runValidators: true, // запуск валидации
-  })
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь с указанным _id не найден');
-      }
-      return res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы некорректные данные при обновлении профиля'));
-      } else if (err.code === 11000) {
-        next(new ConflictError('Этот адрес почты уже зарегистрирован'));
-      } else {
-        next(err);
-      }
-    });
-};
+module.exports = { getCurrentUser, updateUser };
